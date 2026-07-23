@@ -1,23 +1,23 @@
-const dotenv=require('dotenv')
+const dotenv = require('dotenv')
 dotenv.config()
 const express = require('express');
 const app = express()
-const {MongoClient}= require('mongodb')
+const { MongoClient } = require('mongodb')
 const port = process.env.PORT || 3000;
-const bodyparser=require('body-parser')
-const cors=require('cors')
+const bodyparser = require('body-parser')
+const cors = require('cors')
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET;
 app.use(bodyparser.json())
 app.use(cors())
 
-const url=process.env.MONGO_URI
-const client=new MongoClient(url)
+const url = process.env.MONGO_URI
+const client = new MongoClient(url)
 client.connect()
 
 
-const dbName=process.env.DB_NAME;
+const dbName = process.env.DB_NAME;
 
 
 // REGISTER
@@ -60,7 +60,17 @@ app.post('/login', async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });
-
+// AUTH MIDDLEWARE — verifies the JWT token
+function auth(req, res, next) {
+    const header = req.headers.authorization;
+    if (!header) return res.status(401).json({ success: false, message: 'Not logged in' });
+    try {
+        req.user = jwt.verify(header.split(' ')[1], process.env.JWT_SECRET);
+        next();
+    } catch {
+        res.status(401).json({ success: false, message: 'Invalid token' });
+    }
+}
 // GET — this user's passwords
 app.get('/', auth, async (req, res) => {
     try {
@@ -100,5 +110,5 @@ app.delete('/', auth, async (req, res) => {
 
 
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
+    console.log(`Example app listening on port ${port}`)
 })
